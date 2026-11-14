@@ -63,6 +63,7 @@ npm run dev
 | 数据分发 | `exporttask` | 分发任务 | 任务编号、数据源标识、目标系统 |
 | 种子管理 | `seedmgr` | URL种子 | 种子编号、种子URL、发现来源 |
 | 站点地图 | `sitemap` | 站点描述 | 站点编号、站点域名、robots规则 |
+| 边界预演 | `boundarypreview` | 预演记录 / 检查点 | 预演编号、判定指纹、实际可达深度、爬取资格 |
 | Cookie管理 | `cookiejar` | 会话凭证 | 凭证编号、所属站点、登录方式 |
 | 采集器健康 | `healthcheck` | 健康报告 | 报告编号、采集器名称、CPU占用率 |
 | 采集快照 | `snapshot` | 数据快照 | 快照编号、关联任务、快照时间 |
@@ -74,6 +75,11 @@ npm run dev
   `backend/app/routers/<模块>.py`，业务规则在 `backend/app/services/<模块>.py`。
 - 列表接口统一返回 `{ items, total, page, size }`，动作接口统一返回 `{ ok, message }`。
 - 状态流转只允许在 `app/services` 里改，路由层不做业务判断。
+- 边界预演（`GET/POST /api/boundary-preview/*`）只读站点描述的离线链接图，不产生抓取任务；
+  判定优先级为「同域约束 > 深度边界 > robots规则 > 路径排除规则 > 路径包含规则」，
+  sitemap 跳转与同域约束冲突时同域约束优先。重复预演复用同一条站点占用记录；
+  站点或爬虫配置的判定依据更新后，旧预演转为历史，已建立的检查点保留原判定指纹与规则快照。
+  深度爬取的「启用爬取」动作必须先有一次可启用的边界预演。
 
 领域：数据工程
 子方向：数据采集、爬虫与RPA

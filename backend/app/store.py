@@ -8,15 +8,22 @@ from typing import Any
 
 from app.seed import SEED_ROWS
 
+# 检查点、站点占用是边界预演的内部台账，不单独作为业务模块展示。
+HIDDEN_MODULES = {"crawlcheckpoint", "siteoccupancy"}
+
 
 class Store:
     def __init__(self) -> None:
+        self.reset()
+
+    def reset(self) -> None:
+        """重新装载示例数据；预演台账也一并复位。"""
         self._tables: dict[str, list[dict[str, Any]]] = {
             name: [dict(row) for row in rows] for name, rows in SEED_ROWS.items()
         }
 
     def module_names(self) -> list[str]:
-        return sorted(self._tables)
+        return sorted(name for name in self._tables if name not in HIDDEN_MODULES)
 
     def rows(self, module: str) -> list[dict[str, Any]]:
         return self._tables.setdefault(module, [])

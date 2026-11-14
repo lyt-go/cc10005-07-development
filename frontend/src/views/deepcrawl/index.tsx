@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import { Link } from 'react-router-dom'
+
 import { request } from '@/api/client'
 
 const ENDPOINT = '/api/deepcrawl'
@@ -142,6 +144,7 @@ export default function DeepcrawlView() {
                     {action}
                   </button>
                 ))}
+                <Link className="link" to={`/boundarypreview?config=${row.id}`}>边界预演</Link>
               </td>
             </tr>
           ))}

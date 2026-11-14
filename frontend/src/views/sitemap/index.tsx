@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { request } from '@/api/client'
 
@@ -45,7 +46,10 @@ export default function SitemapView() {
   const [rows, setRows] = useState<Row[]>([])
   const [total, setTotal] = useState(0)
   const [errorMessage, setErrorMessage] = useState('')
+  const [notice, setNotice] = useState('')
   const [filters, setFilters] = useState<Record<string, string>>({})
+  const [editing, setEditing] = useState<Row | null>(null)
+  const [editValues, setEditValues] = useState<Record<string, string>>({})
   const filterFields = useMemo(() => columns.slice(0, 3), [])
 
   const reload = useCallback(async () => {
@@ -68,8 +72,40 @@ export default function SitemapView() {
     void reload()
   }, [reload])
 
+  function startEdit(row: Row) {
+    setEditing(row)
+    setEditValues({
+      robots规则: String(row['robots规则'] ?? ''),
+      sitemap地址: String(row['sitemap地址'] ?? ''),
+      页面模板路径: String(row['页面模板路径'] ?? ''),
+      翻页参数名: String(row['翻页参数名'] ?? ''),
+    })
+  }
+
+  async function saveEdit() {
+    if (!editing) return
+    setErrorMessage('')
+    try {
+      const response = await request(`${ENDPOINT}/${editing.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ values: editValues }),
+      })
+      const payload = await response.json()
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.message ?? '站点描述更新失败')
+      }
+      setErrorMessage('')
+      setNotice(payload.message)
+      setEditing(null)
+      await reload()
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : '站点描述更新失败')
+    }
+  }
+
   async function runAction(action: string, row: Row) {
     setErrorMessage('')
+    setNotice('')
     try {
       const response = await request(`${ENDPOINT}/${row.id}/actions`, {
         method: 'POST',
@@ -142,6 +178,8 @@ export default function SitemapView() {
                     {action}
                   </button>
                 ))}
+                <button className="link" type="button" onClick={() => startEdit(row)}>更新规则</button>
+                <Link className="link" to={`/boundarypreview?site=${row.id}`}>边界预演</Link>
               </td>
             </tr>
           ))}
@@ -153,8 +191,29 @@ export default function SitemapView() {
         </tbody>
       </table>
 
+      {editing && (
+        <article className="panel">
+          <h3 className="panel-title">更新站点规则：{String(editing['站点编号'])}</h3>
+          <p className="page-desc">robots、sitemap、模板路径或翻页参数一旦变化，该站点的旧边界预演会转为历史，使用中的检查点仍按原判定指纹可追溯。</p>
+          <div className="filter-bar">
+            {['robots规则', 'sitemap地址', '页面模板路径', '翻页参数名'].map((field) => (
+              <label key={field} className="filter-item">
+                <span>{field}</span>
+                <input
+                  value={editValues[field] ?? ''}
+                  onChange={(event) => setEditValues((prev) => ({ ...prev, [field]: event.target.value }))}
+                />
+              </label>
+            ))}
+            <button className="btn primary" type="button" onClick={() => void saveEdit()}>保存规则</button>
+            <button className="btn ghost" type="button" onClick={() => setEditing(null)}>取消</button>
+          </div>
+        </article>
+      )}
+
       <footer className="page-foot">
         <span>共 {total} 条站点地图记录</span>
+        {notice && <span className="ok-text">{notice}</span>}
         {errorMessage && <span className="error-text">{errorMessage}</span>}
       </footer>
     </section>

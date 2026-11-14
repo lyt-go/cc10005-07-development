@@ -15,6 +15,12 @@ class PageResult(BaseModel, Generic[T]):
     size: int = 20
 
 
+class SortedPageResult(PageResult[dict]):
+    """带排序口径的列表页：返回实际采用的排序字段与稳定兜底顺序。"""
+
+    sort: dict[str, Any] = Field(default_factory=dict)
+
+
 class ActionResult(BaseModel):
     ok: bool
     message: str

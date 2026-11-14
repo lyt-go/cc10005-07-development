@@ -48,6 +48,15 @@ def create_entry(payload: EntryPayload) -> ActionResult:
     return ActionResult(ok=True, message="爬虫配置已登记", entry=entry)
 
 
+@router.patch("/{entry_id}", response_model=ActionResult)
+def update_entry(entry_id: int, payload: EntryPayload) -> ActionResult:
+    """修改爬虫配置；种子、最大深度、路径规则变化后，旧边界预演自动转为历史。"""
+    entry, message, _invalidated = service.update_entry(entry_id, payload.values)
+    if entry is None:
+        return ActionResult(ok=False, message=message)
+    return ActionResult(ok=True, message=message, entry=entry)
+
+
 @router.post("/{entry_id}/actions", response_model=ActionResult)
 def run_action(entry_id: int, payload: EntryPayload) -> ActionResult:
     """对单条爬虫配置执行提交策略评审、启用爬取、暂停爬取；不允许的动作会被拦下并说明原因。"""
